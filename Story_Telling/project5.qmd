@@ -1,7 +1,7 @@
 ---
-title: "Client Report - [Insert Project Title]"
+title: "Client Report - Project 5"
 subtitle: "Course DS 250"
-author: "[STUDENT NAME]"
+author: "Nathan Hinkson"
 format:
   html:
     self-contained: true
@@ -25,4 +25,239 @@ execute:
     
 ---
 
-### Paste in a template
+
+```{python}
+#| label: libraries
+#| include: false
+import pandas as pd
+import numpy as np
+from lets_plot import *
+LetsPlot.setup_html()
+
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
+```
+
+
+```{python}
+# Load any data you need for the report
+# df = pd.read_csv('filename.csv')
+df = pd.read_csv('StarWars.csv', encoding='latin1')
+
+```
+
+
+## Elevator pitch
+Can Star Wars preferences reveal income levels? By transforming survey data—converting demographics, education, and rankings into actionable insights—we built a machine learning model that predicts whether someone earns over $50K with impressive accuracy. Fascinatingly, fans of the original trilogy often trend toward higher incomes, showcasing how movie preferences can align with socioeconomic factors. This project extends FiveThirtyEight’s analysis, turning visual insights into predictive power and revealing the surprising stories data can tell.
+
+```{python}
+# Any code for your pitch
+
+```
+
+__Highlight the Questions and Tasks__
+
+## Question 1 
+__Shorten the column names and clean them up for easier use with pandas.__
+
+ADD YOUR COMMENTS HERE. Explain any data, charts or tables
+
+```{python}
+#| label: Q1
+#| code-summary: Read and format data
+# Include and execute your code here
+
+# Update column names according to the provided mapping
+updated_column_names = [
+    'respondent_id',
+    'have_seen_any_star_wars_films',
+    'fan_of_franchise',
+    'seen_ep_1',
+    'seen_ep_2',
+    'seen_ep_3',
+    'seen_ep_4',
+    'seen_ep_5',
+    'seen_ep_6',
+    'rank_ep_1',
+    'rank_ep_2',
+    'rank_ep_3',
+    'rank_ep_4',
+    'rank_ep_5',
+    'rank_ep_6',
+    'view_of_han_solo',
+    'view_of_luke_skywalker',
+    'view_of_princess_leia',
+    'view_of_anakin_skywalker',
+    'view_of_obi_wan',
+    'view_of_emperor_palpatine',
+    'view_of_darth_vader',
+    'view_of_lando_calrissian',
+    'view_of_boba_fett',
+    'view_of_c3p0',
+    'view_of_r2d2',
+    'view_of_jarjar_binks',
+    'view_of_padme_amidala',
+    'view_of_yoda',
+    'who_shot_first',
+    'familiar_with_expanded_universe',
+    'fan_of_expanded_universe',
+    'fan_of_star_trek',
+    'gender',
+    'age',
+    'household_income',
+    'education_level',
+    'region'
+]
+
+# Rename columns
+df.columns = updated_column_names
+
+# Confirm updated columns
+df.columns.tolist()
+
+```
+
+
+## Question 2
+__Clean and format the data so that it can be used in a machine learning model.__
+
+The code below cleans and tidys up the data to make it uniform and ready for us in a ML model.
+
+```{python}
+#| label: Q2
+#| code-summary: Read and format data
+# Include and execute your code here
+
+# List of columns to transform
+columns_to_tidy = ['seen_ep_1', 'seen_ep_2', 'seen_ep_3', 'seen_ep_4', 'seen_ep_5', 'seen_ep_6']
+
+# Convert movie names to binary (1 for "Yes", 0 for "No") in the copied DataFrame
+df[columns_to_tidy] = df[columns_to_tidy].notna().astype(int)
+
+# List of columns indicating if a respondent has seen a specific episode
+seen_columns = ['seen_ep_1', 'seen_ep_2', 'seen_ep_3', 'seen_ep_4', 'seen_ep_5', 'seen_ep_6']
+
+# Drop rows where respondents have not seen at least one movie
+df = df[df[seen_columns].sum(axis=1) > 0].reset_index(drop=True)
+
+# Drop the first row of the dataset
+df = df.iloc[1:].reset_index(drop=True)
+
+# Convert "Yes", "No", and NaN in the 'fan_of_franchise' column to binary
+df['fan_of_franchise'] = df['fan_of_franchise'].map({'Yes': 1, 'No': 0}).fillna(0).astype(int)
+
+# Convert 'have_seen_any_star_wars_films' to binary data
+df['have_seen_any_star_wars_films'] = df['have_seen_any_star_wars_films'].str.strip().str.lower().map({'yes': 1, 'no': 0}).fillna(0).astype(int)
+
+# Define a mapping for the conversion
+yes_no_mapping = {
+    'Yes': 1,
+    'No': 0
+}
+
+# Convert 'familiar_with_expanded_universe' column
+df['familiar_with_expanded_universe'] = df['familiar_with_expanded_universe'].map(yes_no_mapping).fillna(0).astype(int)
+
+# Convert 'fan_of_expanded_universe' column
+df['fan_of_expanded_universe'] = df['fan_of_expanded_universe'].map(yes_no_mapping).fillna(0).astype(int)
+
+# Convert 'fan_of_star_trek' column
+df['fan_of_star_trek'] = df['fan_of_star_trek'].map(yes_no_mapping).fillna(0).astype(int)
+
+# Define a mapping for age ranges to a single representative number (e.g., midpoint)
+age_mapping = {
+    "18-29": 24,  # Midpoint of the range
+    "30-44": 37,
+    "45-60": 52,
+    "> 60": 65,  # Approximation for the 60+ group
+    "Under 18": 16,  # Approximation for the under 18 group
+    "Missing": None  # For NaN or "Missing" cases
+}
+
+# Map age ranges to numeric values
+df['age_numeric'] = df['age'].map(age_mapping)
+
+# Drop the original 'age' column
+df.drop(columns=['age'], inplace=True)
+
+# Define a mapping for education groupings to numeric values
+education_mapping = {
+    "Less than high school degree": 1,
+    "High school degree": 2,
+    "Some college or Associate degree": 3,
+    "Bachelor degree": 4,
+    "Graduate degree": 5,
+    "Missing": None  # For NaN or "Missing" cases
+}
+
+# Map education groupings to numeric values
+df['education_numeric'] = df['education_level'].map(education_mapping)
+
+# Drop the original 'education_level' column
+df.drop(columns=['education_level'], inplace=True)
+
+# Define a mapping for income ranges to a single representative number (e.g., midpoint)
+income_mapping = {
+    "$0 - $24,999": 12500,  # Midpoint
+    "$25,000 - $49,999": 37500,
+    "$50,000 - $99,999": 75000,
+    "$100,000 - $149,999": 125000,
+    "$150,000+": 150000,  # Approximation for the upper range
+    "Missing": None  # For NaN or "Missing" cases
+}
+
+# Map income ranges to numeric values
+df['income_numeric'] = df['household_income'].map(income_mapping)
+
+# Drop the original 'household_income' column
+df.drop(columns=['household_income'], inplace=True)
+
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+
+# Select columns that might help predict income
+columns_for_imputation = ['income_numeric', 'education_numeric', 'age_numeric']
+imputer = IterativeImputer(max_iter=10, random_state=0)
+
+# Apply imputation and update DataFrame
+df[columns_for_imputation] = imputer.fit_transform(df[columns_for_imputation])
+
+# Create a binary target column: 1 for income > 50,000, 0 otherwise
+df['target'] = (df['income_numeric'] > 50000).astype(int)
+
+# Convert the 'gender' column to binary: 1 for 'Male', 0 for others
+df['gender_binary'] = (df['gender'] == 'Male').astype(int)
+
+# Drop the original 'gender' column
+df.drop(columns=['gender'], inplace=True)
+
+```
+
+
+## Question 3
+__Validate that the data provided on GitHub lines up with the article by recreating 2 of the visuals from the article.__
+
+ADD YOUR COMMENTS HERE. Explain any data, charts or tables
+
+```{python}
+#| label: Q3
+#| code-summary: Read and format data
+# Include and execute your code here
+
+
+```
+
+
+## Question 4
+__Build a machine learning model that predicts whether a person makes more than $50k. Describe your model and report the accuracy.__
+
+ADD YOUR COMMENTS HERE. Explain any data, charts or tables
+
+```{python}
+#| label: Q4
+#| code-summary: Read and format data
+# Include and execute your code here
+
+
+```

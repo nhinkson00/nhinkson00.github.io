@@ -1,7 +1,7 @@
 ---
-title: "Client Report - [Insert Project Title]"
+title: "Client Report - Project 1: What's in a Name?"
 subtitle: "Course DS 250"
-author: "[STUDENT NAME]"
+author: "Nathan Hinkson"
 format:
   html:
     self-contained: true
@@ -22,7 +22,193 @@ format:
         caption: See code
 execute: 
   warning: false
+  echo: true       # Show code in the output
+  eval: true       # Evaluate and execute code
     
 ---
 
-### Paste in a template
+```{python}
+#| label: libraries
+#| include: false
+import pandas as pd
+import numpy as np
+from plotnine import *
+from lets_plot import *
+
+LetsPlot.setup_html()
+```
+
+## Elevator pitch
+_In this project, I analyze name trends using historical data. First, I compare the popularity of my name, Nathan, with its historical usage. I also estimate the age of someone named Brittany based on name data. Then, I examine trends in Christian names—Mary, Martha, Peter, and Paul—from 1920 to 2000 in a combined chart. Finally, I explore how pop culture affects name popularity by analyzing the usage of 'Matilda' to see if it increased after the release of the film. Charts with reference marks highlight key insights. Please note that name usage for each year indicates the number of babies given a name in a year._ 
+
+
+
+```{python}
+#| label: raw_data
+#| code-summary: Read and format project data
+# Include and execute your code here
+df = pd.read_csv('names_year.csv')
+```
+
+
+
+## Question 1
+
+__How does your name at your birth year compare to its use historically?__
+
+- _This chart shows usage of the name Nathan over time, beginning in 1900 and going roughly to the present._
+
+- _There is a sharp increase in the use of the name Nathan beginning in about 1969._ 
+
+- _I was born in the year 2000, which is demonstrated by the red dotted line. Usage peaked in 2015 with 14552 new "Nathan"s, and began to sharply decrease shortly thereafter._
+
+```{python}
+#| label: Q1
+#| code-summary: Click here to see code for chart
+from plotnine import *
+
+LetsPlot.setup_html()
+
+nathan = df.query('name == "Nathan"')
+
+(
+    ggplot(nathan, aes(x='year', y='Total'))
+    + geom_line()
+    + geom_vline(xintercept=2000, linetype='dashed', color='red')  # Vertical line at year 2000
+    + scale_x_continuous(labels=lambda l: [int(x) for x in l])  # Remove commas from x-axis
+    + scale_y_continuous(labels=lambda l: ['{:,}'.format(int(x)) for x in l])  # Add commas to y-axis
+)
+
+```
+
+## Question 2
+
+__If you talked to someone named Brittany on the phone, what is your guess of his or her age? What ages would you not guess?__
+
+- _As seen with the chart, Brittany was very popular in the year 1990, with a very quick rise to popularity, and an equally fast fall from favor. Using the median age of all people named Brittany, we can reasonably guess that someone named Brittany is around 34 years old._
+
+
+```{python}
+#| label: Q2
+#| code-summary: Click here to see code for chart
+#| fig-cap: "Use of the name Brittany over time"
+# Include and execute your code here
+
+#| label: libraries
+#| include: false
+
+from plotnine import *
+
+LetsPlot.setup_html()
+
+brittany = df.query('name == "Brittany"')
+
+(
+    ggplot(brittany, aes(x='year', y='Total'))
+    + geom_line()
+    + scale_x_continuous(labels=lambda l: [int(x) for x in l])  # Remove commas from x-axis
+    + scale_y_continuous(labels=lambda l: ['{:,}'.format(int(x)) for x in l])  # Add commas to y-axis
+)
+#selecting dataset, indicating x and y axes
+#adjusting titles and formatting chart.
+
+```
+
+## Question 3
+
+__Mary, Martha, Peter, and Paul are all Christian names. From 1920 - 2000, compare the name usage of each of the four names in a single chart. What trends do you notice?__
+
+- _Here is a chart containing data on the usage of all four names from 1920-2000. Each uniquely colored line represents usage of one of the names. Roughly around 1955 all four names experience a small peak followed by a decline in use. Mary was the most popular of these names, and also saw the sharpest decrease in use of the four._
+
+
+```{python}
+#| label: Q3
+#| code-summary: Click here to see code for chart
+#| fig-cap: "Mary, Martha, Peter, and Paul"
+# Include and execute your code here
+
+from plotnine import *
+
+LetsPlot.setup_html()
+
+bible_names = df.query('(name == "Mary" or name == "Martha" or name == "Peter" or name == "Paul") and (year >= 1920 and year <= 2000)')
+
+
+(
+    ggplot(bible_names, aes(x='year', y='Total'))
+    + geom_line(aes(color="name"))
+    + scale_x_continuous(labels=lambda l: [int(x) for x in l])  # Remove commas from x-axis
+    + scale_y_continuous(labels=lambda l: ['{:,}'.format(int(x)) for x in l])  # Add commas to y-axis
+)
+
+```
+
+## Question 4
+
+__Think of a unique name from a famous movie. Plot the usage of that name and see how changes line up with the movie release. Does it look like the movie had an effect on usage?__
+
+- _This chart illustrates the historical usage of the name 'Matilda.' The name gained recognition from the book Matilda by Roald Dahl, which was later adapted into a Hollywood film in 1996. The red dotted line marks the year of the film's release, allowing us to observe any potential shifts in the name's popularity following the movie's debut. Based on the data, it is easy to see that the release of the film did likely have an influence on the use of the name Matilda, which began to greatly increase in the years following._
+
+
+```{python}
+#| label: Q4
+#| code-summary: Click here to see code for chart
+#| fig-cap: "Use of the name Matilda over time"
+# Include and execute your code here
+
+from plotnine import *
+
+LetsPlot.setup_html()
+
+matilda = df.query('name == "Matilda"')
+
+(
+    ggplot(matilda, aes(x='year', y='Total'))
+    + geom_line()
+    + geom_vline(xintercept=1996, linetype='dashed', color='red')  # Vertical line at year 1996
+    + scale_x_continuous(labels=lambda l: [int(x) for x in l])  # Remove commas from x-axis
+    + scale_y_continuous(labels=lambda l: ['{:,}'.format(int(x)) for x in l])  # Add commas to y-axis
+)
+
+```
+
+## Stretch Challenge
+
+__This stretch challenge was to recreate the chart given in the Project 1 instructions. While it is not perfect, it is remarkably close.__
+
+```{python}
+#| label: Q5
+#| code-summary: Click here to see code for chart
+#| fig-cap: "Elliot"
+# Include and execute your code here
+
+from plotnine import *
+
+LetsPlot.setup_html()
+
+# Filter the data for the name "Elliot"
+elliot_data = df.query('name == "Elliot" and (year >= 1950 and year <= 2030)')
+
+# Create the plot
+(
+    ggplot(elliot_data, aes(x='year', y='Total')) 
+    + geom_line(color='blue', size=1) 
+    + geom_vline(xintercept=1982, linetype="dashed", color="red") 
+    + geom_vline(xintercept=1985, linetype="dashed", color="red") 
+    + geom_vline(xintercept=2002, linetype="dashed", color="red") 
+    + annotate('text', x=1982, y=1200, label="E.T. Released", ha='right', size=8, color='black', angle=0) 
+    + annotate('text', x=1985, y=1200, label="Second Release", ha='left', size=8, color='black', angle=0) 
+    + annotate('text', x=2002, y=1200, label="Third Release", ha='left', size=8, color='black', angle=0) 
+    + labs(x="year", y="Total", title="Elliot: Name Usage Over Time") 
+    + scale_y_continuous(breaks=np.arange(0, 1400, 200),minor_breaks=None) 
+    + scale_x_continuous(breaks=np.arange(1950, 2030, 10),minor_breaks=None) 
+    + ggtitle("Elliot... What?") 
+    + theme_minimal() 
+    + theme(plot_background=element_rect(fill='#e0f0ff', color=None),  # Light blue background for the whole plot
+         panel_background=element_rect(fill='#e0f0ff', color=None), # Light blue background for the panel
+         plot_title=element_text(size=16, ha="left")
+         )
+)
+
+
+```

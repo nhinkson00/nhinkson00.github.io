@@ -1,7 +1,7 @@
 ---
-title: "Client Report - [Insert Project Title]"
+title: "Client Report - Project 3"
 subtitle: "Course DS 250"
-author: "[STUDENT NAME]"
+author: "Nathan Hinkson"
 format:
   html:
     self-contained: true
@@ -25,4 +25,212 @@ execute:
     
 ---
 
-### Paste in a template
+
+```{python}
+#| label: libraries
+#| include: false
+import pandas as pd
+import numpy as np
+import sqlite3
+from lets_plot import *
+from IPython.display import HTML
+LetsPlot.setup_html()
+
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
+```
+
+
+```{python}
+# Load any data you need for the report
+# df = pd.read_csv('filename.csv')
+file = 'lahmansbaseballdb.sqlite'
+con = sqlite3.connect(file)
+```
+
+
+## Elevator pitch
+
+This analysis sheds light on standout performance metrics in baseball, blending insights into individual and team dynamics. Notably, BYU-Idaho alumni, though few, have achieved remarkable financial success, with some earning salaries exceeding $1 million. Some players with limited at-bats demonstrated perfect batting averages, while career-long analysis highlighted elite hitters surpassing the coveted .300 mark—an indicator of exceptional skill. Moreover, a comparison of the New York Yankees and Boston Red Sox revealed an almost parallel trend in team batting averages over time, despite the Yankees' dominance in World Series wins.
+
+
+```{python}
+# Any code for your pitch
+
+```
+
+__Highlight the Questions and Tasks__
+
+## Task 1 
+
+__Write an SQL query to create a new dataframe about baseball players who attended BYU-Idaho. The new table should contain five columns: playerID, schoolID, salary, and the yearID/teamID associated with each salary. Order the table by salary (highest to lowest) and print out the table in your report.__
+
+This table shows each instance from the data where a player that attended BYU-Idaho played for a baseball team. IT shows what their salary was, along with the year they played and the teamID of the team they played for. There are not many players that attended BYU-I, but those that did were reasonably successful, signing contracts in excess of one million dollars.
+
+```{python}
+#| label: Q1
+#| code-summary: Read and format data
+# Include and execute your code here
+
+byui_player_salaries_query = """
+SELECT DISTINCT s.playerID, cp.schoolID, s.salary, s.yearID, s.teamID
+FROM salaries s
+    JOIN collegeplaying cp ON s.playerID = cp.playerID
+    JOIN schools sch on sch.schoolID = cp.schoolID
+WHERE sch.name_full  LIKE 'Brigham Young University-Idaho%'
+ORDER BY s.salary DESC;
+"""
+byu_idaho_players_df = pd.read_sql(byui_player_salaries_query, con)
+
+html_table = byu_idaho_players_df.to_html(index=False) 
+HTML(html_table)
+```
+
+
+## Task 2a 
+
+__Write an SQL query that provides playerID, yearID, and batting average for players with at least 1 at bat that year. Sort the table from highest batting average to lowest, and then by playerid alphabetically. Show the top 5 results in your report.__
+
+This table shows the five highest batting averages all time for players who had at least one at bat. All of the players displayed had 1 at bat, and 1 hit, thus making their batting average for the year a perfect 1.
+
+```{python}
+#| label: Q2
+#| code-summary: Read and format data
+# Include and execute your code here
+
+batting_avg_1ab_query = """
+SELECT playerID, yearID, h / ab AS batting_average
+FROM batting
+WHERE ab >= 1
+ORDER BY batting_average DESC, playerID
+LIMIT 5;
+"""
+batting_avg_1ab_df = pd.read_sql(batting_avg_1ab_query, con)
+
+html_table = batting_avg_1ab_df.to_html(index=False) 
+HTML(html_table)
+```
+
+## Task 2b
+
+__Use the same query as above, but only include players with at least 10 at bats that year. Print the top 5 results__
+
+This table shows the five highest batting averages all time for players who had at least ten at bats. 
+
+```{python}
+#| label: Q3
+#| code-summary: Read and format data
+# Include and execute your code here
+
+batting_avg_10ab_query = """
+SELECT playerID, yearID, ROUND(CAST(h AS FLOAT) / ab, 3) AS batting_average
+FROM batting
+WHERE ab >= 10
+ORDER BY batting_average DESC, playerID
+LIMIT 5;
+"""
+batting_avg_10ab_df = pd.read_sql(batting_avg_10ab_query, con)
+
+html_table = batting_avg_10ab_df.to_html(index=False) 
+HTML(html_table)
+```
+
+## Task 2c
+
+__Now calculate the batting average for players over their entire careers (all years combined). Only include players with at least 100 at bats, and print the top 5 results.__
+
+This table shows the five players with the highest career batting average all time, but only for players who had at least 100 at bats during their career. In baseball, a batting average of .300 or higher is considered to be excellent, so these players are among the best batters.
+
+```{python}
+#| label: Q4
+#| code-summary: Read and format data
+# Include and execute your code here
+
+career_batting_avg_query = """
+SELECT playerID, ROUND(CAST(SUM(h) AS FLOAT) / SUM(ab), 3) AS career_batting_average
+FROM batting
+GROUP BY playerID
+HAVING SUM(ab) >= 100
+ORDER BY career_batting_average DESC
+LIMIT 5;
+"""
+career_batting_avg_df = pd.read_sql(career_batting_avg_query, con)
+
+html_table = career_batting_avg_df.to_html(index=False) 
+HTML(html_table)
+```
+
+## Task 3
+
+__Pick any two baseball teams and compare them using a metric of your choice (average salary, home runs, number of wins, etc). Write an SQL query to get the data you need, then make a graph using Lets-Plot to visualize the comparison. What do you learn?__
+
+This chart shows the Ney York Yankees and the Boston Red Sox team batting average over time. Interestingly, both teams trend roughly the same throughout history, despite the Yankees having significantly more world series wins. I used a 3 year rolling average to make the chart easier to read without sacrificing data integrity. 
+
+```{python}
+#| label: Q5
+#| code-summary: Read and format data
+# Include and execute your code here
+
+query_team_batting_avg_redsox_yankees = """
+SELECT t.yearID, t.teamID, AVG(CAST(b.h AS FLOAT) / b.ab) AS avg_batting_average
+FROM batting b
+JOIN teams t ON b.teamID = t.teamID AND b.yearID = t.yearID
+WHERE t.teamID IN ('BOS', 'NYA')
+GROUP BY t.yearID, t.teamID
+ORDER BY t.yearID, t.teamID;
+"""
+team_batting_avg_redsox_yankees_df = pd.read_sql(query_team_batting_avg_redsox_yankees, con)
+
+
+# Calculate the 3-year rolling average
+team_batting_avg_redsox_yankees_df['rolling_avg'] = team_batting_avg_redsox_yankees_df.groupby('teamID')['avg_batting_average'].transform(lambda x: x.rolling(3, min_periods=1).mean())
+
+# Set up Lets-Plot for display
+LetsPlot.setup_html()
+
+# Plotting the rolling average
+plot = (ggplot(team_batting_avg_redsox_yankees_df, aes(x='yearID', y='rolling_avg', color='teamID'))
+        + geom_line(size=1.2)
+        + labs(title="3-Year Rolling Batting Average: NY Yankees vs Boston Red Sox",
+               x="Year", y="Team Batting Average")
+        + theme_minimal())
+plot.show()
+
+```
+
+## Stretch Challenge #1
+
+This dataframe provides a summary of baseball player salaries categorized by position. Each row represents a specific playing position, such as Pitcher, Outfielder, or First Base (1B), along with key salary statistics. The **average_salary** column shows the average earnings for players in that position across all recorded years, while the **total_players** column indicates the number of unique players who have played in that position. The **highest_salary** column displays the maximum salary ever recorded for a player in each position, with "N/A" shown if no salary data exists for that position. Additionally, a **salary_category** column classifies each position based on the average salary: "High Salary" for averages above $1 million, "Medium Salary" for averages between $500,000 and $1 million, and "Low Salary" for averages below $500,000. Ordered by average salary in descending order, this dataframe highlights which positions typically command higher salaries in baseball.
+
+```{python}
+#| label: Q6
+#| code-summary: Read and format data
+# Include and execute your code here
+
+query_salary_distribution_all_positions = """
+SELECT 
+    p.pos AS position,
+    ROUND(AVG(s.salary), 0) AS average_salary,
+    COUNT(DISTINCT s.playerID) AS total_players,
+    COALESCE(MAX(s.salary), 'N/A') AS highest_salary,
+    CASE 
+        WHEN AVG(s.salary) > 1000000 THEN 'High Salary'
+        WHEN AVG(s.salary) BETWEEN 500000 AND 1000000 THEN 'Medium Salary'
+        ELSE 'Low Salary'
+    END AS salary_category
+FROM salaries s
+JOIN fielding p ON s.playerID = p.playerID AND s.yearID = p.yearID
+GROUP BY p.pos
+ORDER BY average_salary DESC
+LIMIT 10;
+"""
+
+stretch_q1_df = pd.read_sql(query_salary_distribution_all_positions, con)
+print(stretch_q1_df)
+
+
+
+
+
+```
